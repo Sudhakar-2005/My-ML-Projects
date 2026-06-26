@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer accent soft circle representing the radar / Sharrow shield -->
+    <path
+        android:fillColor="#10FFFFFF"
+        android:pathData="M54,54m-33,0a33,33 0,1 1,66 0a33,33 0,1 1,-66 0" />
+
+    <!-- Sleek financial grid bar chart (faded) -->
+    <path
+        android:fillColor="#30FFFFFF"
+        android:pathData="M34,68h6v-14h-6v14z M46,68h6v-22h-6v22z M58,68h6v-30h-6v30z" />
+
+    <!-- High-impact growth trendline (White Arrow) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M31,64l17,-17l12,12l26,-26h-14v-6h24v24h-6v-14l-20,20l-12,-12l-21,21z" />
+        
+    <!-- Sharrow Core Star Sparkle / Insight Point (Mint Green) -->
+    <path
+        android:fillColor="#8FE381"
+        android:pathData="M80,24l2,6l6,2l-6,2l-2,6l-2,-6l-6,-2l6,-2z" />
+
+    <!-- Sharrow Secondary Sparkle -->
+    <path
+        android:fillColor="#8FE381"
+        android:pathData="M48,32l1,3l3,1l-3,1l-1,3l-1,-3l-3,-1l3,-1z" />
+</vector>
