@@ -28,9 +28,20 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.ui.screens.*
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.FinancialViewModel
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.EaseInCubic
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.tween
 
 enum class DashboardTab {
-    RADAR, PORTFOLIO, SCANNER, WATCHLIST, PREMIUM
+    LANDING, RADAR, PORTFOLIO, SCANNER, WATCHLIST, PREMIUM
 }
 
 class MainActivity : ComponentActivity() {
@@ -40,13 +51,13 @@ class MainActivity : ComponentActivity() {
         
         // Instantiate central ViewModel coordinating our persistent DB + Gemini pipelines
         val viewModel = ViewModelProvider(this)[FinancialViewModel::class.java]
-
+ 
         setContent {
             MyApplicationTheme(darkTheme = isDarkThemeState, dynamicColor = false) {
-                var currentTab by remember { mutableStateOf(DashboardTab.RADAR) }
+                var currentTab by remember { mutableStateOf(DashboardTab.LANDING) }
                 val configuration = LocalConfiguration.current
                 val isExpanded = configuration.screenWidthDp >= 600
-
+ 
                 if (isExpanded) {
                     Row(
                         modifier = Modifier
@@ -65,13 +76,17 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxHeight()
                                 .background(CanvasBg)
                         ) {
-                            when (currentTab) {
-                                DashboardTab.RADAR -> RadarScreen(viewModel)
-                                DashboardTab.PORTFOLIO -> PortfolioScreen(viewModel)
-                                DashboardTab.SCANNER -> ScannerScreen(viewModel)
-                                DashboardTab.WATCHLIST -> WatchlistScreen(viewModel)
-                                DashboardTab.PREMIUM -> SubscriptionScreen(viewModel)
+                            AnimatePresence(targetState = currentTab) { targetTab ->
+                                when (targetTab) {
+                                    DashboardTab.LANDING -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { LandingScreen(viewModel) }
+                                    DashboardTab.RADAR -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { RadarScreen(viewModel) }
+                                    DashboardTab.PORTFOLIO -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { PortfolioScreen(viewModel) }
+                                    DashboardTab.SCANNER -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { ScannerScreen(viewModel) }
+                                    DashboardTab.WATCHLIST -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { WatchlistScreen(viewModel) }
+                                    DashboardTab.PREMIUM -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { SubscriptionScreen(viewModel) }
+                                }
                             }
+                            StockSummarySidePanel(viewModel)
                         }
                     }
                 } else {
@@ -91,6 +106,26 @@ class MainActivity : ComponentActivity() {
                                 tonalElevation = 8.dp,
                                 modifier = Modifier.testTag("dashboard_bottom_bar")
                             ) {
+                                NavigationBarItem(
+                                    selected = currentTab == DashboardTab.LANDING,
+                                    onClick = { currentTab = DashboardTab.LANDING },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (currentTab == DashboardTab.LANDING) Icons.Filled.Info else Icons.Outlined.Info,
+                                            contentDescription = "Welcome"
+                                        )
+                                    },
+                                    label = { Text("Welcome", fontSize = 10.sp) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = selectedIconCol,
+                                        selectedTextColor = selectedTextCol,
+                                        unselectedIconColor = unselectedIconCol,
+                                        unselectedTextColor = unselectedTextCol,
+                                        indicatorColor = indicatorCol
+                                    ),
+                                    modifier = Modifier.testTag("tab_landing")
+                                )
+
                                 NavigationBarItem(
                                     selected = currentTab == DashboardTab.RADAR,
                                     onClick = { currentTab = DashboardTab.RADAR },
@@ -199,13 +234,17 @@ class MainActivity : ComponentActivity() {
                                 .background(CanvasBg)
                                 .padding(innerPadding)
                         ) {
-                            when (currentTab) {
-                                DashboardTab.RADAR -> RadarScreen(viewModel)
-                                DashboardTab.PORTFOLIO -> PortfolioScreen(viewModel)
-                                DashboardTab.SCANNER -> ScannerScreen(viewModel)
-                                DashboardTab.WATCHLIST -> WatchlistScreen(viewModel)
-                                DashboardTab.PREMIUM -> SubscriptionScreen(viewModel)
+                            AnimatePresence(targetState = currentTab) { targetTab ->
+                                when (targetTab) {
+                                    DashboardTab.LANDING -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { LandingScreen(viewModel) }
+                                    DashboardTab.RADAR -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { RadarScreen(viewModel) }
+                                    DashboardTab.PORTFOLIO -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { PortfolioScreen(viewModel) }
+                                    DashboardTab.SCANNER -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { ScannerScreen(viewModel) }
+                                    DashboardTab.WATCHLIST -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { WatchlistScreen(viewModel) }
+                                    DashboardTab.PREMIUM -> FramerMotionEntrance(modifier = Modifier.fillMaxSize()) { SubscriptionScreen(viewModel) }
+                                }
                             }
+                            StockSummarySidePanel(viewModel)
                         }
                     }
                 }
@@ -262,6 +301,7 @@ fun NavigationSidebar(
 
             // Navigation Options
             val tabs = listOf(
+                DashboardTab.LANDING to ("Landing Page" to Icons.Default.Info),
                 DashboardTab.RADAR to ("AI Radar" to Icons.Default.Home),
                 DashboardTab.PORTFOLIO to ("Portfolio" to Icons.Default.Star),
                 DashboardTab.SCANNER to ("Scanners" to Icons.Default.Search),
@@ -276,6 +316,7 @@ fun NavigationSidebar(
                     val bg = if (isSelected) AccentBlue.copy(alpha = 0.15f) else Color.Transparent
                     val contentColor = if (isSelected) AccentBlue else TextGray
                     val tagStr = when(tab) {
+                        DashboardTab.LANDING -> "tab_landing_sidebar"
                         DashboardTab.RADAR -> "tab_radar_sidebar"
                         DashboardTab.PORTFOLIO -> "tab_portfolio_sidebar"
                         DashboardTab.SCANNER -> "tab_scanner_sidebar"

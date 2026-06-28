@@ -42,10 +42,16 @@ data class GenerationConfig(
 )
 
 @JsonClass(generateAdapter = true)
+data class GeminiTool(
+    @Json(name = "googleSearch") val googleSearch: Map<String, String>? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class GeminiRequest(
     @Json(name = "contents") val contents: List<Content>,
     @Json(name = "generationConfig") val generationConfig: GenerationConfig? = null,
-    @Json(name = "systemInstruction") val systemInstruction: Content? = null
+    @Json(name = "systemInstruction") val systemInstruction: Content? = null,
+    @Json(name = "tools") val tools: List<GeminiTool>? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -114,6 +120,51 @@ object RetrofitClient {
         } catch (e: Exception) {
             Log.e("GeminiApi", "Error calling Gemini API", e)
             "AI Service temporarily busy. [Status: Offline Demo Mode active if key missing]. Local intelligence computed. Details: ${e.localizedMessage}"
+        }
+    }
+
+    suspend fun fetchSearchNews(symbols: List<String>): String {
+        val apiKey = BuildConfig.GEMINI_API_KEY
+        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
+            Log.e("GeminiApi", "API Key is missing or placeholder!")
+            return "[]"
+        }
+
+        val prompt = """
+            Search the web using Google Search for the latest financial news, stock market updates, and corporate announcements regarding the following tickers/companies: ${symbols.joinToString(", ")}.
+            
+            Based on the search results, output exactly a JSON array containing up to 5 news articles.
+            Each JSON object MUST contain exactly these fields:
+            - "id": A unique string ID starting with "live_n_" followed by a number, e.g., "live_n_1"
+            - "source": The news source name, e.g., "Bloomberg", "Reuters", "Economic Times"
+            - "title": A crisp, highly accurate headline about the company's recent development
+            - "baseSummary": A concise 2-3 sentence summary of the news story and what happened.
+            - "relevanceToUser": Explain why this is highly relevant to a holder of this stock (e.g., "High (You hold ${symbols.firstOrNull() ?: ""})")
+            - "bullishScore": An integer score from 0 to 100 indicating how positive this news is
+            - "bearishScore": An integer score from 0 to 100 indicating how negative this news is
+            
+            IMPORTANT: Return ONLY the raw JSON array. DO NOT wrap it in any markdown code block (like ```json ... ```). Start response with [ and end with ].
+        """.trimIndent()
+
+        val request = GeminiRequest(
+            contents = listOf(
+                Content(parts = listOf(Part(text = prompt)))
+            ),
+            systemInstruction = Content(parts = listOf(Part(text = "You are a live financial news agent. You MUST use Google Search grounding to retrieve real, actual, current stock news headlines from the live web for the requested tickers. DO NOT hallucinate news. Format the news items perfectly into the requested JSON schema."))),
+            generationConfig = GenerationConfig(temperature = 0.2f),
+            tools = listOf(GeminiTool(googleSearch = emptyMap()))
+        )
+
+        return try {
+            val response = service.generateContent(
+                model = "gemini-3.5-flash",
+                apiKey = apiKey,
+                request = request
+            )
+            response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "[]"
+        } catch (e: Exception) {
+            Log.e("GeminiApi", "Error calling Gemini Search API", e)
+            "[]"
         }
     }
 }
